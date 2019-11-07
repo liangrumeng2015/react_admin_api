@@ -2,11 +2,11 @@ var express = require('express');
 var router = express.Router();
 require('../config/db')
 var LoginModel = require('../model/login');
+var CategoryModel = require('../model/category');
 const SECRET = 'abcdefg'
 const jwt = require('jsonwebtoken')
 const request = require('request');
-
-
+var ObjectId = require('mongodb').ObjectId;   //mongodb自带对象
 
 
 /**
@@ -27,13 +27,17 @@ router.post('/api/register.do',async (req,res)=>{
     password:req.body.password
   },function(err){
     if(!err){
-      console.log('注册成功')
+      res.json({
+        msg:'注册成功',
+        success:true
+      })
     }else{
-      console.log('注册失败')
+      res.json({
+        msg:'注册失败,用户名已存在',
+        success:true
+      })
     }
   })
-  console.log('user的值',user)
-  res.end();
 })
 
 /**
@@ -103,7 +107,6 @@ router.get('/api/profile.do',auth,async (req,res)=>{
  * 用户名：lemon
  * 密码：lemon
  *   
- *  
  * /api/weather.do接口get请求
  * @params{
  *      version: v1或者v6免费接口
@@ -132,7 +135,68 @@ router.get('/api/weather.do',async (req,res)=>{
 })
 
 
+/**
+ * 获取分类列表
+ */
+router.get('/api/category/getCategoryList.do',async (req,res)=>{
+  const parentId = req.query.parentId;
+  const categoryList = await CategoryModel.find({parentId})
+  res.json({
+    categoryList,
+    msg:'成功',
+    success:true
+  })
+})
 
 
+ /**
+  * 添加分类
+  */
+router.post('/api/category/addCategory.do',async (req,res)=>{
+  CategoryModel.create({
+    parentId:req.body.parentId,
+    name:req.body.name
+  },(err)=>{
+    console.log(err);
+    if(!err){
+      res.json({
+        msg:'分类名称添加成功',
+        success:true
+      })
+    }else{
+      res.json({
+        msg:'该分类名称已存在',
+        success:false
+      })
+    }
+  })
+})
+
+/**
+ * 更新分类名称
+ */
+router.post('/api/category/updateCategory.do',async (req,res)=>{
+  CategoryModel.updateOne({_id:ObjectId(req.body.id)},{$set:{name:req.body.name}},(err)=>{
+    if(!err){
+      res.json({
+        msg:'更新成功',
+        success:true
+      })
+    }else{
+      res.json({
+        msg:'更新失败，该分类名称已存在',
+        success:false
+      })
+    }
+  })
+})
+
+
+/**
+ * 根据分类id获取分类
+ */
+router.get('/api/category/getCategoryById.do',async (req,res)=>{
+
+})
 
 module.exports = router;
