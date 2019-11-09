@@ -17,3 +17,7 @@ get请求：
 
 （4）添加分类：
 post请求 /api/category/addCategory.do
+
+
+(5)商品列表：
+post请求：/api/product/getProductsList.do

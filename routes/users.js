@@ -1,8 +1,12 @@
-var express = require('express');
+const express = require('express');
+const formidable = require('formidable');
+const path = require('path');
 var router = express.Router();
 require('../config/db')
 var LoginModel = require('../model/login');
 var CategoryModel = require('../model/category');
+var ProductModel = require('../model/product');
+
 const SECRET = 'abcdefg'
 const jwt = require('jsonwebtoken')
 const request = require('request');
@@ -193,10 +197,109 @@ router.post('/api/category/updateCategory.do',async (req,res)=>{
 
 
 /**
- * 根据分类id获取分类
+ * 获取product的列表，需要分页的奥
  */
-router.get('/api/category/getCategoryById.do',async (req,res)=>{
+router.post('/api/product/getProductsList.do',async (req,res)=>{
+  const pageNum = Number(req.body.pageNum);   // 第几页的数据
+  const pageSize = Number(req.body.pageSize);   // 一页显示几条数据
+  const total = await ProductModel.find({}).countDocuments();
+  const list = await ProductModel.find({}).skip((pageNum-1)*pageSize).limit(pageSize)
+  const pages = Math.ceil(total / pageSize)
+  if(list){
+    res.json({
+      data:{list,total,pageNum,pageSize,pages},
+      success:true
+    })
+  }
+})
 
+/**
+ * 添加product
+ */
+router.post('/api/product/addProduct.do',async (req,res)=>{
+  ProductModel.create({
+    name:req.body.name,   // 产品名称 string
+    desc:req.body.desc,   // 产品描述 string
+    price:req.body.price,   // 产品价格 number
+    x: req.body.status    // 产品状态   0 下架   1在售
+  },(err)=>{
+    if(!err){
+      res.json({
+        msg:'产品添加成功',
+        success:true
+      })
+    }else{
+      res.json({
+        msg:'产品添加失败',
+        success:false
+      })
+    }
+  })
+})
+
+/**
+ * 搜索产品分页列表
+ */
+router.post('/api/product/searchProduct.do',async (req,res)=>{
+  const searchType = req.body.searchType;  // 产品类型   1  按照名称搜索    2 按照描述搜索
+  const productTxt = req.body.productTxt;   // 搜索的内容
+  const pageNum = req.body.pageNum;
+  const pageSize = req.body.pageSize;
+  let list = '',total;
+  if(searchType === '1'){   // 按照产品名称
+    list = await ProductModel.find({name:{$regex:productTxt,$options:"$i"}});
+    total = list.length;
+  }else if(searchType === '2'){   // 按照产品描述
+    list = await ProductModel.find({desc:{$regex:productTxt,$options:"$i"}});
+    total = list.length;
+  }
+  if(list){
+    res.json({
+      data:{list,total},
+      success:true
+    })
+  }else{
+    res.json({
+      msg:'暂无',
+      success:false
+    })
+  }
+})
+
+/**
+ * 文件上传接口  
+ */
+router.post('/api/upload.do', async (req,res)=>{
+  let form = new formidable.IncomingForm();
+  form.encoding = 'utf-8'; // 编码
+  // 保留扩展名
+  form.keepExtensions = true;
+  //文件存储路径 最后要注意加 '/' 否则会被存在public下
+  form.uploadDir = path.join(__dirname, '../public/images/')
+  // 解析 formData 数据
+  form.parse(req, (err, fields ,files) => {
+    if(!err){
+      console.log('第一个！error')
+      // let imgPath = files.file.path;
+      let imgPath = req.body.imgPath;
+
+      console.log('imgPath===',imgPath);
+      return;
+      ProductModel.updateOne({_id:ObjectId('5dc51e4e9463960f1df4b901') }, (err, data) => {
+        if(!err){
+          res.json({
+            data,
+            success:true
+          })
+        }
+      })
+    }else{
+      res.json({
+        msg:'解析formdata出错',
+        success:false
+      })
+    }
+  })
 })
 
 module.exports = router;
