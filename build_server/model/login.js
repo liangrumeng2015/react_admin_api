@@ -10,21 +10,15 @@ var loginSchema = new Schema({
         type:String,
         unique:true
     },
-    // password:{
-    //     type:String,
-    //     set:(val)=>{
-    //         return require('bcrypt').hashSync(val,5)
-    //     }
-    // },
+    password:{
+        type:String,
+        set:(val)=>{
+            return require('bcrypt').hashSync(val,5)
+        }
+    },
     creat_time:{
         type:Number,
         default:new Date().getTime()
-    },
-    email:{
-        type:String,
-    },
-    phone:{
-        type:Number
     }
 })
 var LoginModel = mongoose.model('login',loginSchema);
